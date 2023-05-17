@@ -5,8 +5,12 @@
 #define NODE_ADDRESS_1 12
 #define NODE_ADDRESS_2 13
 #define NODE_ADDRESS_3 14
+#define MAX_SLOTS 9
+
 RF22Router rf22(MY_ADDRESS);
 
+int parkingSlots[MAX_SLOTS];
+int temperatures[MAX_SLOTS];
 
 void setup() {
   Serial.begin(9600);
@@ -34,16 +38,35 @@ void loop() {
   memset(incoming, '\0', RF22_ROUTER_MAX_MESSAGE_LEN);
   uint8_t len = sizeof(buf);
   uint8_t from;
-  int received_value = 0; 
   if (rf22.recvfromAck(buf, &len, &from))
   {
     buf[RF22_ROUTER_MAX_MESSAGE_LEN - 1] = '\0';
     memcpy(incoming, buf, RF22_ROUTER_MAX_MESSAGE_LEN);
     Serial.print("got request from : ");
     Serial.println(from, DEC);
-    received_value = atoi((char*)incoming);
-    Serial.println(received_value);
- //   delay(1000);
+
+
+  String receivedString = String((char*)incoming);
+
+  // Split the received string into individual integers
+  int car_parked = receivedString.substring(0, receivedString.indexOf(",")).toInt();
+  receivedString.remove(0, receivedString.indexOf(",") + 1);
+  int temperature = receivedString.substring(0, receivedString.indexOf(",")).toInt();
+
+  parkingSlots[from] = car_parked;
+  temperatures[from] = temperature;
+  
+  printIntArray(parkingSlots, MAX_SLOTS);
+  printIntArray(temperatures, MAX_SLOTS);
+
   }
 
+}
+
+void printIntArray(int array[], int length) {
+  for (int i = 0; i < length; i++) {
+    Serial.print(array[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
 }
