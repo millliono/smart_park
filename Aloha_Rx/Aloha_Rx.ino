@@ -12,7 +12,7 @@ RF22Router rf22(MY_ADDRESS);
 int parkingSlots[NUM_PARK_SLOTS];
 int temperatures[NUM_PARK_SLOTS];
 int num_sender[NUM_PARK_SLOTS];
-int active[NUM_PARK_SLOTS];
+boolean active[NUM_PARK_SLOTS];
 
 float mean_temp = 0;
 int empty_park_slots = 0;
@@ -31,7 +31,6 @@ void setup()
   for (int i = 0; i < NUM_PARK_SLOTS; i++)
   {
     num_sender[i] = 0;
-    active[i] = 0;
   }
   pinMode(AC_LED, OUTPUT);
 }
@@ -61,6 +60,7 @@ void loop()
     parkingSlots[from] = car_parked;
     temperatures[from] = temperature;
     num_sender[from]++;
+    active[from] = true;
 
     mean_temp = mean(temperatures, NUM_PARK_SLOTS);
     empty_park_slots = num_empty(parkingSlots, NUM_PARK_SLOTS);
@@ -71,12 +71,20 @@ void loop()
     Serial.println("-------------------------");
   }
   open_ac(mean_temp);
-  set_active();
   reset_active();
-
 }
 
-void print_arr(int array[], int length)
+void print_int_arr(int array[], int length)
+{
+  for (int i = 0; i < length; i++)
+  {
+    Serial.print(array[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+}
+
+void print_bool_arr(bool array[], int length)
 {
   for (int i = 0; i < length; i++)
   {
@@ -128,7 +136,9 @@ void open_ac(float mean_temperature)
 void print_info(int empty_park_slots, int mean_temp)
 {
   Serial.print("empty parking spaces: ");
-  Serial.println(empty_park_slots);
+  Serial.print(empty_park_slots);
+  Serial.print("/");
+  Serial.println(NUM_PARK_SLOTS);
 
   Serial.print("mean temperature: ");
   Serial.println(mean_temp);
@@ -136,35 +146,33 @@ void print_info(int empty_park_slots, int mean_temp)
 
 void print_table(int park_slots[], int temperatures[])
 {
-  print_arr(park_slots, NUM_PARK_SLOTS);
-  print_arr(temperatures, NUM_PARK_SLOTS);
-  print_arr(num_sender, NUM_PARK_SLOTS);
-  print_arr(active, NUM_PARK_SLOTS);
-}
-
-void set_active()
-{
-  for (int i = 0; i < NUM_PARK_SLOTS; i++)
-  {
-    if (num_sender[i] > 0)
-    {
-      active[i] = num_sender[i];
-    }
-    else
-    {
-      active[i] = 0;
-    }
-  }
+  print_int_arr(park_slots, NUM_PARK_SLOTS);
+  print_int_arr(temperatures, NUM_PARK_SLOTS);
+  //print_int_arr(num_sender, NUM_PARK_SLOTS); 
+  //print_bool_arr(active, NUM_PARK_SLOTS);
 }
 
 void reset_active()
 {
   if (num_messages >= RESET)
   {
+    Serial.print("Non-responding parking nodes:  ");
+    for (int i = 0; i < NUM_PARK_SLOTS; i++)
+    {
+      if (active[i] == false)
+      {
+        Serial.print(i);
+        Serial.print("| ");
+      }
+    }
+    Serial.println("");
+    Serial.println("-------------------------");
+
     num_messages = 0;
     for (int i = 0; i < NUM_PARK_SLOTS; i++)
     {
       num_sender[i] = 0;
+      active[i] = false;
     }
   }
 }
